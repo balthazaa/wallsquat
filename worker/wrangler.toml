@@ -1,0 +1,37 @@
+name = "hellodiane-router"
+main = "router.js"
+compatibility_date = "2024-01-01"
+workers_dev = false
+
+[[d1_databases]]
+binding = "MY_DB"
+database_id = "284f4871-bfc7-40f4-bfad-afd47306ce94"
+database_name = "hellodiane"
+
+[[routes]]
+pattern = "hellodiane.top/api/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "hellodiane.top/wallsquat/api/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "wallsquat.hellodiane.top/api/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "hellodiane.top/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "wallsquat.hellodiane.top/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "wallsquat-dev.hellodiane.top/api/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "wallsquat-dev.hellodiane.top/*"
+zone_name = "hellodiane.top"
