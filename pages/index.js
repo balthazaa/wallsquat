@@ -14,9 +14,9 @@ const VIEW_TITLES = {
 };
 
 const VIEW_SUBTITLES = {
-  checkin: '记录每日靠墙蹲，看见积累的力量',
-  wishlist: '写下想去的地方，一起实现',
-  messages: 'Diane & 懒人的留言板',
+  checkin: '每日两次，坚持打卡💪',
+  wishlist: '记录我们的小愿望✨',
+  messages: '想说点什么💬',
 };
 
 export default function Home() {
