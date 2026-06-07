@@ -35,3 +35,11 @@ zone_name = "hellodiane.top"
 [[routes]]
 pattern = "wallsquat-dev.hellodiane.top/*"
 zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "wallsquat-prod.hellodiane.top/api/*"
+zone_name = "hellodiane.top"
+
+[[routes]]
+pattern = "wallsquat-prod.hellodiane.top/*"
+zone_name = "hellodiane.top"

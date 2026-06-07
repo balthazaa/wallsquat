@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: process.env.NODE_ENV === 'production' ? '/wallsquat' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/wallsquat' : undefined,
+  // 新版不使用 /wallsquat 前缀，独立部署
+  basePath: '',
+  assetPrefix: undefined,
   images: {
     unoptimized: true,
   },
