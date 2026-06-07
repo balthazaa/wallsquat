@@ -62,7 +62,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
   const fmtDate = (ts) => {
     if (!ts) return '';
     const d = new Date(ts);
-    return `${d.getMonth() + 1}月${d.getDate()}日`;
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
   };
 
   return (
@@ -180,7 +180,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                     gap: 10,
                   }}
                 >
-                  {/* Check circle */}
+                  {/* Category icon avatar */}
                   <button
                     onClick={() => handleToggle(item.id)}
                     style={{
@@ -189,7 +189,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                       borderRadius: '50%',
                       background: item.done
                         ? 'hsl(142, 71%, 75%)'
-                        : COLORS.subtleBg,
+                        : `${cat.color}18`,
                       border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
@@ -200,7 +200,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                       flexShrink: 0,
                     }}
                   >
-                    {item.done ? '✓' : ''}
+                    {item.done ? '✓' : cat.icon}
                   </button>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -262,15 +262,22 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                       )}
 
                       {item.done && (
-                        <span
-                          style={{
-                            fontSize: '0.65rem',
-                            color: COLORS.success,
-                            fontWeight: 600,
-                          }}
-                        >
-                          已实现
-                        </span>
+                        <>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              color: COLORS.success,
+                              fontWeight: 600,
+                            }}
+                          >
+                            已实现
+                          </span>
+                          {item.completedAt && (
+                            <span style={{ fontSize: '0.65rem', color: COLORS.textMuted }}>
+                              {fmtDate(item.completedAt)}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

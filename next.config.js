@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 新版不使用 /wallsquat 前缀，独立部署
+  // 静态导出，适配 Cloudflare Pages
+  output: 'export',
   basePath: '',
-  assetPrefix: undefined,
+  assetPrefix: '',
   images: {
     unoptimized: true,
   },
   trailingSlash: true,
+  distDir: 'out',
 };
 
 module.exports = nextConfig;

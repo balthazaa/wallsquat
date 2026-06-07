@@ -11,11 +11,11 @@ export default function FadeIn({ children, delay = 0 }) {
     <div
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(12px)',
+        marginTop: visible ? 0 : 12,
         transition:
           'opacity 0.5s ease ' +
           delay +
-          'ms, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) ' +
+          'ms, margin-top 0.5s cubic-bezier(0.22, 1, 0.36, 1) ' +
           delay +
           'ms',
       }}

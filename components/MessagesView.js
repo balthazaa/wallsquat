@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { COLORS } from '../lib/constants';
+import { useState } from 'react';
+import { COLORS, USERS } from '../lib/constants';
 import { uid as genUid } from '../lib/api';
 import Modal from './Modal';
 
@@ -35,23 +35,21 @@ function groupByDate(msgs) {
 export default function MessagesView({ messages, onUpdate, currentUser, onShowToast }) {
   const [text, setText] = useState('');
   const [showInput, setShowInput] = useState(false);
+  const [sendAs, setSendAs] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
-  const bottomRef = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const handleSend = () => {
     if (!text.trim()) return;
+    const sender = sendAs || currentUser.id;
     const newMsg = {
       id: genUid(),
       content: text.trim(),
-      sender: currentUser.id,
+      sender,
       createdAt: new Date().toISOString(),
     };
     onUpdate([...(messages || []), newMsg]);
     setText('');
+    setSendAs(null);
     setShowInput(false);
     onShowToast('留言已发送');
   };
@@ -97,10 +95,69 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
       </div>
 
       {/* Send Modal */}
-      <Modal visible={showInput} onClose={() => { setShowInput(false); setText(''); }}>
+      <Modal visible={showInput} onClose={() => { setShowInput(false); setText(''); setSendAs(null); }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 20px 0', textAlign: 'center' }}>
           发消息
         </h3>
+
+        {/* Sender switcher */}
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              gap: 0,
+              padding: 4,
+              background: COLORS.subtleBg2,
+              borderRadius: 999,
+            }}
+          >
+            {USERS.map((user) => {
+              const active = (sendAs || currentUser.id) === user.id;
+              const avatar = senderAvatar(user.id);
+              return (
+                <button
+                  key={user.id}
+                  onClick={() => setSendAs(user.id)}
+                  style={{
+                    width: 100,
+                    padding: '8px 6px',
+                    border: 'none',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    background: active ? avatar.bg : 'transparent',
+                    color: active ? '#fff' : COLORS.textMuted,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: active ? 'rgba(255,255,255,0.3)' : avatar.bg,
+                      color: active ? '#fff' : '#fff',
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {avatar.emoji}
+                  </span>
+                  {user.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -316,7 +373,6 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                 </div>
               );
             })}
-            <div ref={bottomRef} />
           </div>
         )}
       </div>

@@ -6,7 +6,7 @@ const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 const TIME_SLOTS = [
   { id: 'am', label: '上午打卡', subLabel: '6:00 — 14:00', icon: '☀️' },
-  { id: 'pm', label: '下午打卡', subLabel: '12:00 — 22:00', icon: '🌙' },
+  { id: 'pm', label: '下午打卡', subLabel: '14:00 — 22:00', icon: '🌙' },
 ];
 
 // D1 format: { "YYYY-MM-DD": { "userId": { "am"|"pm": { done, time } } } }
@@ -140,6 +140,13 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
     return `${y}年${parseInt(m)}月${parseInt(d)}日`;
   };
 
+  // Format timestamp to HH:MM
+  const fmtTime = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
   return (
     <div>
       {/* Today Checkin Cards */}
@@ -173,7 +180,7 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
                   {slot.label}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: COLORS.textMuted, marginTop: 2 }}>
-                  {info ? '已完成' : slot.subLabel}
+                  {info ? `已完成 ${fmtTime(info.time)}` : slot.subLabel}
                 </div>
               </div>
               {info ? (
@@ -216,12 +223,48 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
       </div>
 
       {/* Calendar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 16 }}>
-        <button onClick={() => navMonth(-1)} style={{ background: 'none', border: `1px solid ${COLORS.subtleBorder}`, borderRadius: 8, width: 36, height: 36, fontSize: 20, cursor: 'pointer', color: COLORS.textMedium }}>‹</button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
+        <button
+          onClick={() => navMonth(-1)}
+          style={{
+            background: '#fff',
+            border: 'none',
+            borderRadius: 999,
+            width: 36,
+            height: 36,
+            fontSize: 18,
+            cursor: 'pointer',
+            color: COLORS.textMedium,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ‹
+        </button>
         <span style={{ fontSize: '1.05rem', fontWeight: 700, color: COLORS.textDark }}>
           {viewYear}年{viewMonth + 1}月
         </span>
-        <button onClick={() => navMonth(1)} style={{ background: 'none', border: `1px solid ${COLORS.subtleBorder}`, borderRadius: 8, width: 36, height: 36, fontSize: 20, cursor: 'pointer', color: COLORS.textMedium }}>›</button>
+        <button
+          onClick={() => navMonth(1)}
+          style={{
+            background: '#fff',
+            border: 'none',
+            borderRadius: 999,
+            width: 36,
+            height: 36,
+            fontSize: 18,
+            cursor: 'pointer',
+            color: COLORS.textMedium,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ›
+        </button>
       </div>
 
       <div style={{ background: '#fff', borderRadius: '1.5rem', padding: '22px 18px', boxShadow: '0 4px 20px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.04)', border: `1px solid ${COLORS.subtleBorder}`, maxWidth: 420, margin: '0 auto' }}>
@@ -277,11 +320,11 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.successLightBg, border: '1px solid hsl(142, 71%, 70%)' }} />
-            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>完成</span>
+            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>2次</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 12, height: 12, borderRadius: 3, background: COLORS.warning, border: '1px solid hsl(45, 85%, 70%)' }} />
-            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>部分</span>
+            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>1次</span>
           </div>
         </div>
 
@@ -292,6 +335,13 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
         </div>
       </div>
 
+      {/* Tips */}
+      <div style={{ maxWidth: 420, margin: '16px auto 0', display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <span style={{ fontSize: '0.7rem', padding: '4px 12px', borderRadius: 999, background: '#fff', color: COLORS.textMedium, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>并脚</span>
+        <span style={{ fontSize: '0.7rem', padding: '4px 12px', borderRadius: 999, background: '#fff', color: COLORS.textMedium, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>收住头部</span>
+        <span style={{ fontSize: '0.7rem', padding: '4px 12px', borderRadius: 999, background: '#fff', color: COLORS.textMedium, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>慢做</span>
+      </div>
+
       {/* Stats */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 18, fontSize: '0.82rem', color: COLORS.textMedium, flexWrap: 'wrap' }}>
         <span>本月打卡：{stats.days} 天</span>
@@ -299,7 +349,7 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
       </div>
 
       {/* Makeup Modal */}
-      <Modal visible={showMakeup} onClose={() => { setShowMakeup(false); setSelectedDate(null); }}>
+      <Modal visible={showMakeup} onClose={() => { setShowMakeup(false); setSelectedDate(null); }} showClose>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 6px 0', textAlign: 'center' }}>
           补卡
         </h3>

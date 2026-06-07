@@ -14,13 +14,14 @@ const VIEW_TITLES = {
 };
 
 const VIEW_SUBTITLES = {
-  checkin: '每日三次，坚持打卡💪',
+  checkin: '每日两次，坚持打卡💪',
   wishlist: '记录我们的小愿望✨',
   messages: '想说点什么💬',
 };
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [currentUser, setCurrentUser] = useState(USERS[0]);
   const [currentView, setCurrentView] = useState('checkin');
   const [checkins, setCheckins] = useState({});
@@ -46,8 +47,10 @@ export default function Home() {
         setCheckins(c);
         setWishlist(w);
         setMessages(m);
+        setLoadError('');
       } catch (err) {
         console.warn('Load error:', err);
+        setLoadError(err.message || String(err));
       }
       setLoading(false);
     }
@@ -97,7 +100,30 @@ export default function Home() {
           fontFamily: 'Inter, sans-serif',
         }}
       >
-        加载中...
+        {loadError ? (
+          <div>
+            <div style={{ color: 'hsl(346, 84%, 61%)', fontWeight: 600, marginBottom: 8 }}>加载失败</div>
+            <div style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{loadError}</div>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                marginTop: 16,
+                padding: '8px 20px',
+                borderRadius: 999,
+                border: 'none',
+                background: COLORS.primary,
+                color: '#fff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              重新加载
+            </button>
+          </div>
+        ) : (
+          '加载中...'
+        )}
       </div>
     );
   }
@@ -231,7 +257,7 @@ export default function Home() {
                 onClick={() => setCurrentView(tab.id)}
                 style={{
                   flex: 1,
-                  padding: '15px 0',
+                  padding: '10px 0',
                   border: 'none',
                   background: 'transparent',
                   cursor: 'pointer',
@@ -241,7 +267,7 @@ export default function Home() {
                   justifyContent: 'center',
                   gap: 2,
                   transition: 'all 0.2s',
-                  height: 90,
+                  height: 80,
                   boxSizing: 'border-box',
                 }}
               >
