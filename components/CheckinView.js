@@ -149,6 +149,92 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
 
   return (
     <div>
+      {/* ---- Today Checkin Cards (moved above calendar) ---- */}
+      <div style={{ marginBottom: 24, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+        <h3 style={{ color: COLORS.textDark, marginBottom: 14, fontSize: '1.05rem', fontWeight: 700 }}>
+          今日打卡
+        </h3>
+
+        {TIME_SLOTS.map((slot) => {
+          const hasCheckin = checkins[`${today}_${slot.id}`];
+
+          return (
+            <div
+              key={slot.id}
+              style={{
+                borderRadius: '1.6rem',
+                border: hasCheckin
+                  ? `1.5px solid hsl(142, 71%, 70%)`
+                  : `1.5px solid ${COLORS.subtleBorder}`,
+                background: hasCheckin ? 'hsl(142, 76%, 96%)' : '#fff',
+                padding: '14px 18px',
+                marginBottom: 10,
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>{slot.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textDark }}>
+                  {slot.label}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: COLORS.textMuted, marginTop: 2 }}>
+                  {hasCheckin ? `已完成 ${formatMinutes(hasCheckin.duration)}` : slot.subLabel}
+                </div>
+              </div>
+              {hasCheckin ? (
+                <button
+                  onClick={() => {
+                    const key = `${today}_${slot.id}`;
+                    const newCheckins = { ...checkins };
+                    delete newCheckins[key];
+                    onUpdate(newCheckins);
+                    onShowToast('已取消');
+                  }}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '7px 16px',
+                    background: 'hsl(142, 71%, 90%)',
+                    color: 'hsl(142, 71%, 35%)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  取消
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    const key = `${today}_${slot.id}`;
+                    const newCheckins = { ...checkins };
+                    newCheckins[key] = { duration: 30, userId: currentUser.id };
+                    onUpdate(newCheckins);
+                    onShowToast('已打卡');
+                  }}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '8px 18px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: COLORS.primary,
+                    color: '#fff',
+                    boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+                  }}
+                >
+                  打卡
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       {/* ---- Calendar ---- */}
       <div
         style={{
@@ -176,8 +262,8 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
         </button>
         <span
           style={{
-            fontSize: 18,
-            fontWeight: 600,
+            fontSize: '1.05rem',
+            fontWeight: 700,
             color: COLORS.textDark,
           }}
         >
@@ -332,7 +418,7 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
           justifyContent: 'center',
           gap: 24,
           marginTop: 18,
-          fontSize: 14,
+          fontSize: '0.82rem',
           color: COLORS.textMedium,
           flexWrap: 'wrap',
         }}
@@ -342,89 +428,10 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
         <span>均值：{monthCount > 0 ? Math.round(monthMinutes / monthCount) : 0} 分钟/天</span>
       </div>
 
-      {/* ---- Selected Day Checkin Cards ---- */}
-      <div style={{ marginTop: 24, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
-        <h4 style={{ color: COLORS.primary, marginBottom: 12, fontSize: '0.95rem', fontWeight: 600 }}>
-          {selectedDate === today ? '今日' : selectedDate} 打卡
-        </h4>
-
-        {TIME_SLOTS.map((slot) => {
-          const hasCheckin = checkins[`${selectedDate}_${slot.id}`];
-          const duration = hasCheckin ? hasCheckin.duration : 0;
-
-          return (
-            <div
-              key={slot.id}
-              style={{
-                borderRadius: '1.8rem',
-                border: hasCheckin
-                  ? `1.5px solid ${COLORS.successBorder}`
-                  : `1.5px solid ${COLORS.subtleBorder}`,
-                background: hasCheckin ? COLORS.successBg : '#fff',
-                padding: '14px 18px',
-                marginBottom: 10,
-                transition: 'all 0.3s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: '1.2rem' }}>{slot.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textDark }}>
-                    {slot.label}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>
-                    {slot.subLabel}
-                    {hasCheckin && (
-                      <span style={{ color: COLORS.textMedium }}>
-                        {' '}— {formatMinutes(hasCheckin.duration)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {hasCheckin ? (
-                  <button
-                    onClick={() => handleDeleteSlot(slot.id)}
-                    style={{
-                      border: 'none',
-                      borderRadius: 999,
-                      padding: '6px 14px',
-                      background: COLORS.subtleBg,
-                      color: COLORS.textMedium,
-                      fontSize: '0.78rem',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    删除
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleAddSlot(slot.id, 30)}
-                    style={{
-                      border: 'none',
-                      borderRadius: 999,
-                      padding: '8px 18px',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      background: COLORS.primary,
-                      color: '#fff',
-                      boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
-                    }}
-                  >
-                    打卡
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
       {/* Monthly record list */}
       {monthRecords.length > 0 && (
         <div style={{ marginTop: 24, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
-          <h4 style={{ color: COLORS.textMedium, marginBottom: 8, fontSize: '0.85rem' }}>
+          <h4 style={{ color: COLORS.textMedium, marginBottom: 8, fontSize: '0.82rem', fontWeight: 600 }}>
             本月记录
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -435,7 +442,7 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  fontSize: '0.82rem',
+                  fontSize: '0.8rem',
                   color: COLORS.textMedium,
                   padding: '4px 0',
                 }}

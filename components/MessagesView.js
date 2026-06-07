@@ -12,8 +12,28 @@ function formatTime(iso) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function formatDateLabel(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function groupByDate(msgs) {
+  const groups = [];
+  let currentDate = null;
+  msgs.forEach((msg) => {
+    const dateLabel = formatDateLabel(msg.createdAt);
+    if (dateLabel !== currentDate) {
+      currentDate = dateLabel;
+      groups.push({ type: 'date', label: dateLabel });
+    }
+    groups.push({ type: 'msg', data: msg });
+  });
+  return groups;
+}
+
 export default function MessagesView({ messages, onUpdate, currentUser, onShowToast }) {
   const [text, setText] = useState('');
+  const [showInput, setShowInput] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const bottomRef = useRef(null);
 
@@ -31,6 +51,7 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
     };
     onUpdate([...(messages || []), newMsg]);
     setText('');
+    setShowInput(false);
     onShowToast('留言已发送');
   };
 
@@ -41,9 +62,109 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
   };
 
   const isDiane = currentUser.id === 'Diane';
+  const grouped = groupByDate(messages || []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Section header with send button */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16,
+        }}
+      >
+        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: COLORS.textDark, margin: 0 }}>
+          留言板
+        </h3>
+        <button
+          onClick={() => setShowInput(true)}
+          style={{
+            padding: '7px 16px',
+            borderRadius: 999,
+            border: 'none',
+            background: COLORS.primary,
+            color: '#fff',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+          }}
+        >
+          + 发消息
+        </button>
+      </div>
+
+      {/* Inline input form */}
+      {showInput && (
+        <div
+          style={{
+            marginBottom: 16,
+            background: '#fff',
+            borderRadius: '1.4rem',
+            padding: '14px 16px',
+            border: `1.5px solid ${COLORS.subtleBorder}`,
+            display: 'flex',
+            gap: 8,
+          }}
+        >
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="说点什么..."
+            autoFocus
+            style={{
+              flex: 1,
+              padding: '10px 16px',
+              borderRadius: 999,
+              border: `1px solid ${COLORS.subtleBorder}`,
+              fontSize: '0.88rem',
+              color: COLORS.textDark,
+              outline: 'none',
+              background: '#fff',
+              fontFamily: 'inherit',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 999,
+              border: 'none',
+              background: isDiane ? COLORS.primary : 'hsl(218, 60%, 65%)',
+              color: '#fff',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: `0 4px 14px ${isDiane ? COLORS.primaryGlow : 'hsla(218, 60%, 65%, 0.35)'}`,
+            }}
+          >
+            发送
+          </button>
+          <button
+            onClick={() => {
+              setShowInput(false);
+              setText('');
+            }}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 999,
+              border: 'none',
+              background: COLORS.subtleBg,
+              color: COLORS.textMedium,
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            取消
+          </button>
+        </div>
+      )}
+
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
         {(!messages || messages.length === 0) ? (
@@ -52,14 +173,39 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
               textAlign: 'center',
               padding: '48px 0',
               color: COLORS.textMuted,
-              fontSize: '0.88rem',
+              fontSize: '0.85rem',
             }}
           >
             还没有留言，说点什么吧！
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {messages.map((msg) => {
+            {grouped.map((item, idx) => {
+              if (item.type === 'date') {
+                return (
+                  <div
+                    key={`date-${idx}`}
+                    style={{
+                      textAlign: 'center',
+                      margin: '8px 0',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        color: COLORS.textMuted,
+                        background: COLORS.subtleBg,
+                        padding: '3px 12px',
+                        borderRadius: 999,
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              }
+
+              const msg = item.data;
               const isMe = msg.sender === currentUser.id;
               const avatar = senderAvatar(msg.sender);
               const time = msg.createdAt ? formatTime(msg.createdAt) : '';
@@ -77,15 +223,14 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                   {/* Avatar */}
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       borderRadius: '50%',
                       background: avatar.bg,
-                      border: `2px solid ${avatar.border}33`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.7rem',
+                      fontSize: '0.65rem',
                       fontWeight: 700,
                       color: avatar.color,
                       flexShrink: 0,
@@ -180,52 +325,6 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
             <div ref={bottomRef} />
           </div>
         )}
-      </div>
-
-      {/* Input */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          padding: '12px 0 0',
-          marginTop: 8,
-          borderTop: `1px solid ${COLORS.subtleBorder}`,
-        }}
-      >
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="说点什么..."
-          style={{
-            flex: 1,
-            padding: '10px 16px',
-            borderRadius: 999,
-            border: `1px solid ${COLORS.subtleBorder}`,
-            fontSize: '0.88rem',
-            color: COLORS.textDark,
-            outline: 'none',
-            background: '#fff',
-            fontFamily: 'inherit',
-          }}
-        />
-        <button
-          onClick={handleSend}
-          style={{
-            padding: '10px 20px',
-            borderRadius: 999,
-            border: 'none',
-            background: isDiane ? COLORS.primary : 'hsl(218, 60%, 65%)',
-            color: '#fff',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: `0 4px 14px ${isDiane ? COLORS.primaryGlow : 'hsla(218, 60%, 65%, 0.35)'}`,
-          }}
-        >
-          发送
-        </button>
       </div>
     </div>
   );

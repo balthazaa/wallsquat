@@ -61,6 +61,36 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
 
   return (
     <div style={{ position: 'relative' }}>
+      {/* Section header with add button */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16,
+        }}
+      >
+        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: COLORS.textDark, margin: 0 }}>
+          我们的愿望清单
+        </h3>
+        <button
+          onClick={() => setShowAdd(true)}
+          style={{
+            padding: '7px 16px',
+            borderRadius: 999,
+            border: 'none',
+            background: COLORS.primary,
+            color: '#fff',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+          }}
+        >
+          + 添加
+        </button>
+      </div>
+
       {/* Category filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <button
@@ -288,8 +318,8 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
         </div>
       )}
 
-      {/* Add section */}
-      {showAdd ? (
+      {/* Add form */}
+      {showAdd && (
         <div
           style={{
             marginTop: 16,
@@ -392,25 +422,6 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
               取消
             </button>
           </div>
-        </div>
-      ) : (
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <button
-            onClick={() => setShowAdd(true)}
-            style={{
-              padding: '12px 32px',
-              borderRadius: 999,
-              border: 'none',
-              background: COLORS.primary,
-              color: '#fff',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
-            }}
-          >
-            + 添加愿望
-          </button>
         </div>
       )}
     </div>

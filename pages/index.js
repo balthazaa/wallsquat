@@ -112,10 +112,10 @@ export default function Home() {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 32, textAlign: 'center' }}>
         <h1
           style={{
-            fontSize: '2rem',
+            fontSize: '1.75rem',
             fontWeight: 700,
             letterSpacing: '-0.02em',
             color: COLORS.textDark,
@@ -124,7 +124,7 @@ export default function Home() {
         >
           {VIEW_TITLES[currentView]}
         </h1>
-        <p style={{ fontSize: '0.88rem', color: COLORS.textMuted }}>
+        <p style={{ fontSize: '0.85rem', color: COLORS.textMuted }}>
           {VIEW_SUBTITLES[currentView]}
         </p>
       </div>
@@ -209,7 +209,7 @@ export default function Home() {
           right: 0,
           background: '#fff',
           borderTop: `1px solid ${COLORS.subtleBorder}`,
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
+          boxShadow: '0 -2px 12px rgba(0,0,0,0.04)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           zIndex: 50,
         }}
@@ -227,39 +227,39 @@ export default function Home() {
               onClick={() => setCurrentView(tab.id)}
               style={{
                 flex: 1,
-                padding: '14px 0',
+                padding: '8px 0 6px',
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 4,
+                gap: 2,
                 transition: 'all 0.2s',
               }}
             >
               <span
                 style={{
-                  fontSize: '0.72rem',
+                  fontSize: '0.65rem',
                   fontWeight: 600,
                   color:
                     currentView === tab.id ? COLORS.primary : COLORS.textMuted,
                   transition: 'color 0.2s',
                 }}
               >
-                {tab.label === '打卡' && '\uD83C\uDFE0 '}
-                {tab.label === 'Wishlist' && '\u2B50 '}
+                {tab.label === '打卡' && '\uD83D\uDCCB '}
+                {tab.label === 'Wishlist' && '\u2728 '}
                 {tab.label === '留言板' && '\uD83D\uDCAC '}
                 {tab.label}
               </span>
               <div
                 style={{
-                  width: 20,
-                  height: 3,
+                  width: 16,
+                  height: 2,
                   borderRadius: 999,
                   background:
                     currentView === tab.id ? COLORS.primary : 'transparent',
-                  marginTop: 2,
+                  marginTop: 1,
                   transition: 'all 0.2s',
                 }}
               />
