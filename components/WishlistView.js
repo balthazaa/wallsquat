@@ -91,7 +91,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
     if (userId === 'Diane') {
       return { bg: COLORS.dianeBadgeBg, color: COLORS.dianeBadgeColor, text: 'Diane' };
     }
-    if (userId === '淡人') {
+    if (userId === '懒人' || userId === '淡人') {
       return { bg: COLORS.lanrenBadgeBg, color: COLORS.lanrenBadgeColor, text: '懒人' };
     }
     return null;
