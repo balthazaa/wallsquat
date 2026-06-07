@@ -1,34 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { COLORS } from '../lib/constants';
 
-export default function Toast({ message, type = 'success', onClose }) {
+export default function Toast({ msg }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
   useEffect(() => {
-    if (!message) return;
-    const timer = setTimeout(onClose, 2500);
-    return () => clearTimeout(timer);
-  }, [message, onClose]);
+    if (!msg) return;
+    setVisible(true);
+    const t = setTimeout(() => setVisible(false), 2000);
+    return () => clearTimeout(t);
+  }, [msg]);
 
-  if (!message) return null;
-
-  const bgColor = type === 'success' ? '#4a90d9' : '#e74c3c';
+  if (!msg) return null;
 
   return (
     <div
+      ref={ref}
       style={{
         position: 'fixed',
-        top: 30,
+        bottom: 40,
         left: '50%',
         transform: 'translateX(-50%)',
-        background: bgColor,
+        background: COLORS.toastBg,
         color: '#fff',
-        padding: '10px 28px',
-        borderRadius: 8,
-        fontWeight: 500,
-        fontSize: 15,
-        zIndex: 9999,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        padding: '10px 24px',
+        borderRadius: 999,
+        fontSize: '0.88rem',
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.3s',
+        pointerEvents: 'none',
+        zIndex: 200,
+        whiteSpace: 'nowrap',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
       }}
     >
-      {message}
+      {msg}
     </div>
   );
 }

@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
 
-export default function FadeIn({ children, delay = 0, duration = 400 }) {
+export default function FadeIn({ children, delay = 0 }) {
   const [visible, setVisible] = useState(false);
-
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
   }, [delay]);
 
   return (
     <div
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'none' : 'translateY(10px)',
-        transition: `opacity ${duration}ms ease, transform ${duration}ms ease`,
+        transform: visible ? 'translateY(0)' : 'translateY(12px)',
+        transition:
+          'opacity 0.5s ease ' +
+          delay +
+          'ms, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) ' +
+          delay +
+          'ms',
       }}
     >
       {children}

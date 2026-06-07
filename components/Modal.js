@@ -1,62 +1,37 @@
-import { useEffect, useRef } from 'react';
+import { COLORS } from '../lib/constants';
 
-export default function Modal({ open, onClose, title, children }) {
-  const overlayRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => {
-      if (e.target === overlayRef.current) onClose();
-    };
-    const keyHandler = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('keydown', keyHandler);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('keydown', keyHandler);
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
+export default function Modal({ visible, onClose, children, style: extraStyle }) {
+  if (!visible) return null;
 
   return (
     <div
-      ref={overlayRef}
       style={{
+        display: 'flex',
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.18)',
-        display: 'flex',
-        alignItems: 'center',
+        background: COLORS.overlay,
+        zIndex: 100,
         justifyContent: 'center',
-        zIndex: 1000,
+        alignItems: 'center',
+        backdropFilter: 'blur(4px)',
+        animation: 'fadeIn 0.2s ease',
+        ...extraStyle,
       }}
+      onClick={onClose}
     >
       <div
         style={{
           background: '#fff',
-          borderRadius: 14,
-          padding: '28px 24px 20px',
-          minWidth: 320,
-          maxWidth: '92vw',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
-          position: 'relative',
+          borderRadius: '1.8rem',
+          padding: 28,
+          width: '92%',
+          maxWidth: 400,
+          boxShadow:
+            '0 20px 60px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.08)',
+          animation: 'slideUpModal 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {title && (
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 18,
-              marginBottom: 18,
-              color: '#4a90d9',
-            }}
-          >
-            {title}
-          </div>
-        )}
         {children}
       </div>
     </div>

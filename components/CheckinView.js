@@ -1,214 +1,327 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import dayjs from 'dayjs';
-import FadeIn from './FadeIn';
-import Modal from './Modal';
-import Toast from './Toast';
-import { fetchCheckins, saveCheckins } from '../lib/api';
+import { useState, useEffect } from 'react';
+import { COLORS, TIME_SLOTS } from '../lib/constants';
 
-function getDaysInMonth(year, month) {
-  return dayjs(`${year}-${String(month).padStart(2, '0')}-01`).daysInMonth();
+function getToday() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function getFirstDayOfWeek(year, month) {
-  return dayjs(`${year}-${String(month).padStart(2, '0')}-01`).day();
+function getDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function buildDateStr(year, month, day) {
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+function formatMinutes(mins) {
+  if (!mins) return '0';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}hr ${m}min` : `${m}min`;
 }
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+function getFirstDayOfMonth(y, m) {
+  return new Date(y, m, 1).getDay();
+}
 
-export default function CheckinView({ userId }) {
-  const [year, setYear] = useState(dayjs().year());
-  const [month, setMonth] = useState(dayjs().month() + 1);
-  const [records, setRecords] = useState({});
-  const [showModal, setShowModal] = useState(false);
-  const [modalDate, setModalDate] = useState('');
-  const [modalDuration, setModalDuration] = useState('');
-  const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(false);
+function getDaysInMonth(y, m) {
+  return new Date(y, m + 1, 0).getDate();
+}
 
-  const loadRecords = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchCheckins();
-      setRecords(data);
-    } catch (e) {
-      setToast({ message: '加载失败', type: 'error' });
+export default function CheckinView({ checkins, onUpdate, currentUser, onShowToast }) {
+  const today = getToday();
+  const now = new Date();
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [selectedDate, setSelectedDate] = useState(today);
+
+  // Calendar data
+  const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
+  const totalDays = getDaysInMonth(viewYear, viewMonth);
+  const prevTotalDays = getDaysInMonth(viewYear, viewMonth - 1);
+
+  const calendarDays = [];
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+
+  // Previous month fill
+  for (let i = firstDay - 1; i >= 0; i--) {
+    calendarDays.push({
+      day: prevTotalDays - i,
+      date: getDateStr(new Date(viewYear, viewMonth - 1, prevTotalDays - i)),
+      isOtherMonth: true,
+    });
+  }
+
+  // Current month
+  for (let d = 1; d <= totalDays; d++) {
+    const date = getDateStr(new Date(viewYear, viewMonth, d));
+    calendarDays.push({ day: d, date, isOtherMonth: false });
+  }
+
+  // Fill remaining cells
+  const remaining = 7 - (calendarDays.length % 7);
+  if (remaining < 7) {
+    for (let d = 1; d <= remaining; d++) {
+      calendarDays.push({
+        day: d,
+        date: getDateStr(new Date(viewYear, viewMonth + 1, d)),
+        isOtherMonth: true,
+      });
     }
-    setLoading(false);
-  }, []);
+  }
 
-  useEffect(() => {
-    loadRecords();
-  }, [loadRecords]);
-
-  // Filter records for current user + current month
-  const filteredKeys = useMemo(() => {
-    const prefix = `${year}-${String(month).padStart(2, '0')}`;
-    return Object.keys(records).filter(
-      (k) => k.startsWith(prefix) && records[k].userId === userId
-    );
-  }, [records, year, month, userId]);
-
-  const checkinDateSet = useMemo(() => {
-    return new Set(filteredKeys);
-  }, [filteredKeys]);
-
-  const totalDuration = filteredKeys.reduce((s, k) => s + (records[k].duration || 0), 0);
-  const avgDuration = filteredKeys.length
-    ? Math.round(totalDuration / filteredKeys.length)
-    : 0;
-
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfWeek(year, month);
-  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
-
-  const handlePrevMonth = () => {
-    if (month === 1) { setYear(year - 1); setMonth(12); }
-    else { setMonth(month - 1); }
-  };
-
-  const handleNextMonth = () => {
-    if (month === 12) { setYear(year + 1); setMonth(1); }
-    else { setMonth(month + 1); }
-  };
-
-  const handleDayClick = (day) => {
-    setModalDate(buildDateStr(year, month, day));
-    setModalDuration('');
-    setShowModal(true);
-  };
-
-  const handleAddCheckin = async () => {
-    const dur = Number(modalDuration);
-    if (!modalDuration || isNaN(dur) || dur <= 0) {
-      setToast({ message: '请输入有效时长', type: 'error' });
+  // Compute stats
+  let monthCount = 0;
+  let monthMinutes = 0;
+  Object.keys(checkins).forEach((k) => {
+    if (!k.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`))
       return;
-    }
-    try {
-      const updated = { ...records, [modalDate]: { duration: dur, userId } };
-      await saveCheckins(updated);
-      setRecords(updated);
-      setToast({ message: '打卡成功！', type: 'success' });
-      setShowModal(false);
-    } catch (e) {
-      setToast({ message: '打卡失败', type: 'error' });
-    }
-  };
+    if (!checkins[k]) return;
+    monthMinutes += checkins[k].duration || 0;
+  });
+  // Count unique days in month with any checkin
+  const monthDays = new Set();
+  Object.keys(checkins).forEach((k) => {
+    if (!k.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`))
+      return;
+    if (!checkins[k]) return;
+    monthDays.add(k.slice(0, 10));
+  });
+  monthCount = monthDays.size;
 
-  const handleDeleteCheckin = async (dateKey) => {
-    if (!confirm(`确定删除 ${dateKey} 的记录？`)) return;
-    try {
-      const updated = { ...records };
-      delete updated[dateKey];
-      await saveCheckins(updated);
-      setRecords(updated);
-      setToast({ message: '已删除', type: 'success' });
-    } catch (e) {
-      setToast({ message: '删除失败', type: 'error' });
-    }
-  };
+  // Today's checkins
+  const todayAM = checkins[`${today}_am`];
+  const todayPM = checkins[`${today}_pm`];
 
-  // Build calendar cells
-  const renderCells = [];
-  for (let i = 0; i < firstDay; i++) {
-    renderCells.push(<div key={`empty-${i}`} />);
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = buildDateStr(year, month, d);
-    const isChecked = checkinDateSet.has(dateStr);
-    renderCells.push(
-      <div
-        key={d}
-        onClick={() => handleDayClick(d)}
-        style={{
-          padding: '8px 0',
-          borderRadius: 8,
-          cursor: 'pointer',
-          background: isChecked ? '#e8f4fd' : 'transparent',
-          color: isChecked ? '#4a90d9' : '#333',
-          fontWeight: isChecked ? 600 : 400,
-          fontSize: 15,
-          transition: 'background 0.15s',
-          textAlign: 'center',
-        }}
-      >
-        {d}
-      </div>
-    );
-  }
-  const remaining = totalCells - renderCells.length;
-  for (let i = 0; i < remaining; i++) {
-    renderCells.push(<div key={`end-${i}`} />);
+  function navMonth(delta) {
+    let m = viewMonth + delta;
+    let y = viewYear;
+    if (m < 0) {
+      m = 11;
+      y--;
+    } else if (m > 11) {
+      m = 0;
+      y++;
+    }
+    setViewMonth(m);
+    setViewYear(y);
   }
 
-  // Sorted record list
-  const sortedRecords = filteredKeys
-    .slice()
-    .sort((a, b) => (a > b ? -1 : 1));
+  function getDayStatus(date) {
+    const am = checkins[`${date}_am`];
+    const pm = checkins[`${date}_pm`];
+    if (am && pm) return 'full';
+    if (am || pm) return 'half';
+    return 'none';
+  }
+
+  function handleAddSlot(slotId, duration) {
+    const key = `${selectedDate}_${slotId}`;
+    const newCheckins = { ...checkins };
+    newCheckins[key] = { duration, userId: currentUser.id };
+    onUpdate(newCheckins);
+    onShowToast('已添加');
+  }
+
+  function handleDeleteSlot(slotId) {
+    const key = `${selectedDate}_${slotId}`;
+    const newCheckins = { ...checkins };
+    delete newCheckins[key];
+    onUpdate(newCheckins);
+    onShowToast('已删除');
+  }
+
+  // Records for selected date
+  const selectedAM = checkins[`${selectedDate}_am`];
+  const selectedPM = checkins[`${selectedDate}_pm`];
+  const selectedSlots = [];
+  if (selectedAM) selectedSlots.push({ id: 'am', ...selectedAM, slot: TIME_SLOTS[0] });
+  if (selectedPM) selectedSlots.push({ id: 'pm', ...selectedPM, slot: TIME_SLOTS[1] });
+
+  // Records for the month
+  const monthRecords = [];
+  Object.keys(checkins).forEach((k) => {
+    if (!k.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`))
+      return;
+    if (!checkins[k]) return;
+    const date = k.slice(0, 10);
+    const slotId = k.slice(11);
+    const slot = TIME_SLOTS.find((s) => s.id === slotId);
+    monthRecords.push({ date, slotId, duration: checkins[k].duration, slot });
+  });
+  monthRecords.sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <FadeIn>
-      <Toast
-        message={toast?.message}
-        type={toast?.type}
-        onClose={() => setToast(null)}
-      />
-
-      {/* Month navigator */}
+    <div>
+      {/* ---- Calendar ---- */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 18,
-          marginBottom: 18,
+          marginBottom: 16,
         }}
       >
-        <button onClick={handlePrevMonth} style={navBtnStyle}>‹</button>
-        <span style={{ fontSize: 18, fontWeight: 600, color: '#4a90d9' }}>
-          {year}年{month}月
+        <button
+          onClick={() => navMonth(-1)}
+          style={{
+            background: 'none',
+            border: `1px solid ${COLORS.subtleBorder}`,
+            borderRadius: 8,
+            width: 36,
+            height: 36,
+            fontSize: 20,
+            cursor: 'pointer',
+            color: COLORS.textMedium,
+          }}
+        >
+          ‹
+        </button>
+        <span
+          style={{
+            fontSize: 18,
+            fontWeight: 600,
+            color: COLORS.textDark,
+          }}
+        >
+          {viewYear}年{viewMonth + 1}月
         </span>
-        <button onClick={handleNextMonth} style={navBtnStyle}>›</button>
+        <button
+          onClick={() => navMonth(1)}
+          style={{
+            background: 'none',
+            border: `1px solid ${COLORS.subtleBorder}`,
+            borderRadius: 8,
+            width: 36,
+            height: 36,
+            fontSize: 20,
+            cursor: 'pointer',
+            color: COLORS.textMedium,
+          }}
+        >
+          ›
+        </button>
       </div>
 
-      {/* Calendar grid */}
       <div
         style={{
           background: '#fff',
-          borderRadius: 14,
-          padding: 16,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-          maxWidth: 400,
+          borderRadius: '1.5rem',
+          padding: '22px 18px',
+          boxShadow:
+            '0 4px 20px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.04)',
+          border: `1px solid ${COLORS.subtleBorder}`,
+          maxWidth: 420,
           margin: '0 auto',
         }}
       >
+        {/* Weekday headers */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(7,1fr)',
+            gridTemplateColumns: 'repeat(7, 1fr)',
             gap: 4,
             textAlign: 'center',
             marginBottom: 6,
           }}
         >
-          {WEEKDAYS.map((w) => (
-            <div key={w} style={{ fontSize: 13, color: '#999', fontWeight: 500 }}>
+          {weekdays.map((w) => (
+            <div
+              key={w}
+              style={{
+                textAlign: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                color: COLORS.textMuted,
+                padding: '4px 0',
+              }}
+            >
               {w}
             </div>
           ))}
         </div>
+
+        {/* Day grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(7,1fr)',
+            gridTemplateColumns: 'repeat(7, 1fr)',
             gap: 4,
             textAlign: 'center',
           }}
         >
-          {renderCells}
+          {calendarDays.map(({ day, date, isOtherMonth }, i) => {
+            const isToday = date === today;
+            const status = getDayStatus(date);
+            const isSelected = date === selectedDate;
+            const isOther = isOtherMonth;
+
+            let bg;
+            if (status === 'full') bg = COLORS.successLightBg;
+            else if (status === 'half') bg = COLORS.warning;
+            else bg = COLORS.subtleBg2;
+
+            return (
+              <div
+                key={i}
+                onClick={() => {
+                  if (!isOther) setSelectedDate(date);
+                }}
+                style={{
+                  padding: '8px 0',
+                  borderRadius: '1rem',
+                  cursor: isOther ? 'default' : 'pointer',
+                  border: isToday
+                    ? '2px solid hsl(346, 84%, 61%)'
+                    : '2px solid transparent',
+                  background: isSelected && !isOther ? bg : isOther ? 'transparent' : bg,
+                  color: isOther ? COLORS.textDisabled : COLORS.textDark,
+                  fontWeight: 400,
+                  fontSize: 15,
+                  transition: 'background 0.15s',
+                  textAlign: 'center',
+                }}
+              >
+                {day}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 16,
+            marginTop: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                background: COLORS.successLightBg,
+                border: '1px solid hsl(142, 71%, 70%)',
+              }}
+            />
+            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>
+              完成
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                background: COLORS.warning,
+                border: '1px solid hsl(45, 85%, 70%)',
+              }}
+            />
+            <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>
+              部分
+            </span>
+          </div>
         </div>
       </div>
 
@@ -217,113 +330,128 @@ export default function CheckinView({ userId }) {
         style={{
           display: 'flex',
           justifyContent: 'center',
-          gap: 32,
+          gap: 24,
           marginTop: 18,
           fontSize: 14,
-          color: '#666',
+          color: COLORS.textMedium,
           flexWrap: 'wrap',
         }}
       >
-        <span>本月打卡：{filteredKeys.length} 天</span>
-        <span>总时长：{totalDuration} 分钟</span>
-        <span>均值：{avgDuration} 分钟/天</span>
+        <span>本月打卡：{monthCount} 天</span>
+        <span>总时长：{monthMinutes} 分钟</span>
+        <span>均值：{monthCount > 0 ? Math.round(monthMinutes / monthCount) : 0} 分钟/天</span>
       </div>
 
-      {/* Checkin list */}
-      <div style={{ marginTop: 20, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
-        <h4 style={{ color: '#4a90d9', marginBottom: 10 }}>打卡记录</h4>
-        {loading ? (
-          <div style={{ textAlign: 'center', color: '#999' }}>加载中...</div>
-        ) : sortedRecords.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#bbb', padding: 20 }}>
-            本月暂无记录
-          </div>
-        ) : (
-          sortedRecords.map((dateKey) => (
+      {/* ---- Selected Day Checkin Cards ---- */}
+      <div style={{ marginTop: 24, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+        <h4 style={{ color: COLORS.primary, marginBottom: 12, fontSize: '0.95rem', fontWeight: 600 }}>
+          {selectedDate === today ? '今日' : selectedDate} 打卡
+        </h4>
+
+        {TIME_SLOTS.map((slot) => {
+          const hasCheckin = checkins[`${selectedDate}_${slot.id}`];
+          const duration = hasCheckin ? hasCheckin.duration : 0;
+
+          return (
             <div
-              key={dateKey}
+              key={slot.id}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#fff',
-                borderRadius: 10,
-                padding: '10px 16px',
-                marginBottom: 8,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                borderRadius: '1.8rem',
+                border: hasCheckin
+                  ? `1.5px solid ${COLORS.successBorder}`
+                  : `1.5px solid ${COLORS.subtleBorder}`,
+                background: hasCheckin ? COLORS.successBg : '#fff',
+                padding: '14px 18px',
+                marginBottom: 10,
+                transition: 'all 0.3s ease',
               }}
             >
-              <span style={{ fontSize: 15 }}>
-                {dateKey} — {records[dateKey].duration} 分钟
-              </span>
-              <button
-                onClick={() => handleDeleteCheckin(dateKey)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#e74c3c',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                }}
-              >
-                删除
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.2rem' }}>{slot.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textDark }}>
+                    {slot.label}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>
+                    {slot.subLabel}
+                    {hasCheckin && (
+                      <span style={{ color: COLORS.textMedium }}>
+                        {' '}— {formatMinutes(hasCheckin.duration)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {hasCheckin ? (
+                  <button
+                    onClick={() => handleDeleteSlot(slot.id)}
+                    style={{
+                      border: 'none',
+                      borderRadius: 999,
+                      padding: '6px 14px',
+                      background: COLORS.subtleBg,
+                      color: COLORS.textMedium,
+                      fontSize: '0.78rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    删除
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleAddSlot(slot.id, 30)}
+                    style={{
+                      border: 'none',
+                      borderRadius: 999,
+                      padding: '8px 18px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: COLORS.primary,
+                      color: '#fff',
+                      boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+                    }}
+                  >
+                    打卡
+                  </button>
+                )}
+              </div>
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
 
-      {/* Add checkin modal */}
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="添加打卡记录">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <label style={{ fontSize: 14, color: '#555' }}>
-            日期：<b>{modalDate}</b>
-          </label>
-          <input
-            type="number"
-            placeholder="时长（分钟）"
-            value={modalDuration}
-            onChange={(e) => setModalDuration(e.target.value)}
-            style={inputStyle}
-          />
-          <button onClick={handleAddCheckin} style={btnStyle}>
-            提交
-          </button>
+      {/* Monthly record list */}
+      {monthRecords.length > 0 && (
+        <div style={{ marginTop: 24, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+          <h4 style={{ color: COLORS.textMedium, marginBottom: 8, fontSize: '0.85rem' }}>
+            本月记录
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {monthRecords.map((rec, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: '0.82rem',
+                  color: COLORS.textMedium,
+                  padding: '4px 0',
+                }}
+              >
+                <span style={{ color: COLORS.textMuted, width: 80 }}>
+                  {rec.date.slice(5)}
+                </span>
+                <span>{rec.slot?.label || rec.slotId}</span>
+                <span style={{ color: COLORS.textDark, fontWeight: 500 }}>
+                  {formatMinutes(rec.duration)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </Modal>
-    </FadeIn>
+      )}
+    </div>
   );
 }
-
-const navBtnStyle = {
-  background: 'none',
-  border: '1px solid #ddd',
-  borderRadius: 8,
-  width: 36,
-  height: 36,
-  fontSize: 20,
-  cursor: 'pointer',
-  color: '#4a90d9',
-};
-
-const inputStyle = {
-  padding: '10px 14px',
-  borderRadius: 8,
-  border: '1px solid #ddd',
-  fontSize: 15,
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-const btnStyle = {
-  padding: '10px 0',
-  borderRadius: 8,
-  border: 'none',
-  background: '#4a90d9',
-  color: '#fff',
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: 'pointer',
-  width: '100%',
-};

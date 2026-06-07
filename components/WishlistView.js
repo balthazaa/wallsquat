@@ -1,250 +1,418 @@
-import { useState, useEffect, useCallback } from 'react';
-import FadeIn from './FadeIn';
-import Modal from './Modal';
-import Toast from './Toast';
-import { fetchWishlist, saveWishlist, uid } from '../lib/api';
+import { useState } from 'react';
+import { COLORS, CATEGORIES } from '../lib/constants';
+import { uid as genUid } from '../lib/api';
 
-const CATEGORIES = [
-  { id: 'travel', label: '旅行地', icon: '✈️', color: '#4a90d9' },
-  { id: 'food', label: '美食', icon: '🍜', color: '#e87c3e' },
-  { id: 'experience', label: '新体验', icon: '🌟', color: '#8b5cf6' },
-  { id: 'other', label: '其他', icon: '🎀', color: '#d4708a' },
-];
+export default function WishlistView({ items, onUpdate, currentUser, onShowToast }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [addContent, setAddContent] = useState('');
+  const [addCategory, setAddCategory] = useState('other');
+  const [filter, setFilter] = useState('all');
+  const [deleteId, setDeleteId] = useState(null);
 
-export default function WishlistView({ userId }) {
-  const [items, setItems] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [newContent, setNewContent] = useState('');
-  const [newCategory, setNewCategory] = useState('travel');
-  const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [userIdInput, setUserIdInput] = useState('');
+  // Filter items by current user and category
+  const userItems = (items || []).filter((item) => !item.userId || item.userId === currentUser.id);
+  const filteredItems =
+    filter === 'all'
+      ? userItems
+      : userItems.filter((item) => item.category === filter);
 
-  const loadItems = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchWishlist();
-      setItems(data);
-    } catch (e) {
-      setToast({ message: '加载失败', type: 'error' });
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    loadItems();
-  }, [loadItems]);
-
-  const handleAdd = async () => {
-    if (!newContent.trim()) {
-      setToast({ message: '请输入内容', type: 'error' });
-      return;
-    }
-    try {
-      const item = {
-        id: uid(),
-        content: newContent.trim(),
-        userId: userId,
-        category: newCategory,
-        createdAt: new Date().toISOString(),
-      };
-      const updated = [...items, item];
-      await saveWishlist(updated);
-      setItems(updated);
-      setNewContent('');
-      setNewCategory('travel');
-      setShowModal(false);
-      setToast({ message: '已添加！', type: 'success' });
-    } catch (e) {
-      setToast({ message: '添加失败', type: 'error' });
-    }
+  const handleToggle = (itemId) => {
+    const newItems = items.map((item) =>
+      item.id === itemId ? { ...item, done: !item.done } : item
+    );
+    onUpdate(newItems);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('确定删除这条愿望？')) return;
-    try {
-      const updated = items.filter((item) => item.id !== id);
-      await saveWishlist(updated);
-      setItems(updated);
-      setToast({ message: '已删除', type: 'success' });
-    } catch (e) {
-      setToast({ message: '删除失败', type: 'error' });
-    }
+  const handleAdd = () => {
+    if (!addContent.trim()) return;
+    const newItem = {
+      id: genUid(),
+      content: addContent.trim(),
+      category: addCategory,
+      userId: currentUser.id,
+      createdAt: new Date().toISOString(),
+      done: false,
+    };
+    onUpdate([...(items || []), newItem]);
+    setAddContent('');
+    setShowAdd(false);
+    onShowToast('愿望已添加');
   };
 
-  const handleToggleComplete = async (id) => {
-    try {
-      const updated = items.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      );
-      await saveWishlist(updated);
-      setItems(updated);
-    } catch (e) {
-      setToast({ message: '操作失败', type: 'error' });
-    }
+  const handleDelete = (itemId) => {
+    onUpdate(items.filter((item) => item.id !== itemId));
+    setDeleteId(null);
+    onShowToast('已删除');
   };
 
-  // Group by category
-  const grouped = {};
-  items.forEach((item) => {
-    const cat = item.category || 'other';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(item);
-  });
+  const getCategoryInfo = (catId) => {
+    return CATEGORIES.find((c) => c.id === catId) || CATEGORIES[3];
+  };
+
+  function getUserBadge(userId) {
+    if (userId === 'Diane') {
+      return { bg: COLORS.dianeBadgeBg, color: COLORS.dianeBadgeColor, text: 'Diane' };
+    }
+    if (userId === '淡人') {
+      return { bg: COLORS.lanrenBadgeBg, color: COLORS.lanrenBadgeColor, text: '懒人' };
+    }
+    return null;
+  }
 
   return (
-    <FadeIn>
-      <Toast
-        message={toast?.message}
-        type={toast?.type}
-        onClose={() => setToast(null)}
-      />
-
-      {/* Add button at top */}
-      <div style={{ textAlign: 'right', marginBottom: 16 }}>
+    <div style={{ position: 'relative' }}>
+      {/* Category filter */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setFilter('all')}
           style={{
-            padding: '6px 16px',
+            border: 'none',
             borderRadius: 999,
-            border: '1px solid #4a90d9',
-            background: '#fff',
-            color: '#4a90d9',
-            fontSize: 14,
+            padding: '6px 14px',
+            fontSize: '0.78rem',
+            fontWeight: 600,
             cursor: 'pointer',
+            background: filter === 'all' ? COLORS.textDark : '#fff',
+            color: filter === 'all' ? '#fff' : COLORS.textMuted,
+            boxShadow: filter === 'all' ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
+            transition: 'all 0.15s',
           }}
         >
-          + 添加愿望
+          全部
         </button>
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setFilter(cat.id)}
+            style={{
+              border: 'none',
+              borderRadius: 999,
+              padding: '6px 14px',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: filter === cat.id ? cat.color : '#fff',
+              color: filter === cat.id ? '#fff' : COLORS.textMuted,
+              boxShadow:
+                filter === cat.id
+                  ? `0 2px 8px ${cat.color}33`
+                  : '0 1px 4px rgba(0,0,0,0.06)',
+              transition: 'all 0.15s',
+            }}
+          >
+            {cat.icon} {cat.label}
+          </button>
+        ))}
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>加载中...</div>
-      ) : items.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#bbb', padding: 40 }}>
-          还没有愿望，快来添加吧！
+      {/* Items */}
+      {filteredItems.length === 0 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '48px 0',
+            color: COLORS.textMuted,
+            fontSize: '0.88rem',
+          }}
+        >
+          还没有愿望，添加一个吧！
         </div>
       ) : (
-        CATEGORIES.map((cat) => {
-          const catItems = grouped[cat.id] || [];
-          if (catItems.length === 0) return null;
-          return (
-            <div key={cat.id} style={{ marginBottom: 20 }}>
-              <h4 style={{ color: '#666', fontSize: 14, marginBottom: 8 }}>
-                {cat.icon} {cat.label}
-              </h4>
-              {catItems.map((item) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filteredItems.map((item) => {
+            const cat = getCategoryInfo(item.category);
+
+            return (
+              <div
+                key={item.id}
+                style={{
+                  borderRadius: '1.4rem',
+                  border: item.done
+                    ? `1.5px solid hsl(142, 71%, 70%)`
+                    : `1.5px solid ${COLORS.subtleBorder}`,
+                  background: item.done ? COLORS.successBg : '#fff',
+                  padding: '16px 18px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+                  transition: 'all 0.2s',
+                }}
+              >
                 <div
-                  key={item.id}
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: '#fff',
-                    borderRadius: 10,
-                    padding: '12px 16px',
-                    marginBottom: 8,
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-                    opacity: item.completed ? 0.5 : 1,
+                    alignItems: 'flex-start',
+                    gap: 10,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                    <span
-                      onClick={() => handleToggleComplete(item.id)}
-                      style={{
-                        cursor: 'pointer',
-                        fontSize: 18,
-                        userSelect: 'none',
-                      }}
-                    >
-                      {item.completed ? '✅' : '⬜'}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 15,
-                        textDecoration: item.completed ? 'line-through' : 'none',
-                        color: item.completed ? '#bbb' : '#333',
-                      }}
-                    >
-                      {item.content}
-                    </span>
-                  </div>
+                  {/* Check circle */}
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => handleToggle(item.id)}
                     style={{
-                      background: 'none',
+                      width: 38,
+                      height: 38,
+                      borderRadius: '50%',
+                      background: item.done
+                        ? 'hsl(142, 71%, 75%)'
+                        : COLORS.subtleBg,
                       border: 'none',
-                      color: '#e74c3c',
                       cursor: 'pointer',
-                      fontSize: 13,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.1rem',
+                      transition: 'background 0.2s',
                       flexShrink: 0,
                     }}
                   >
-                    删除
+                    {item.done ? '✓' : ''}
                   </button>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        color: item.done
+                          ? 'hsl(142, 71%, 40%)'
+                          : COLORS.textDark,
+                        marginBottom: 4,
+                        wordBreak: 'break-word',
+                        textDecoration: item.done ? 'line-through' : 'none',
+                      }}
+                    >
+                      {item.content}
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                          background: `${cat.color}18`,
+                          color: cat.color,
+                          padding: '2px 8px',
+                          borderRadius: 999,
+                        }}
+                      >
+                        {cat.icon} {cat.label}
+                      </span>
+
+                      {getUserBadge(item.userId) && (
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            background: getUserBadge(item.userId).bg,
+                            color: getUserBadge(item.userId).color,
+                            padding: '2px 8px',
+                            borderRadius: 999,
+                          }}
+                        >
+                          {getUserBadge(item.userId).text}
+                        </span>
+                      )}
+
+                      {item.done && (
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            color: COLORS.success,
+                            fontWeight: 600,
+                          }}
+                        >
+                          已实现
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Delete */}
+                  {deleteId === item.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        style={{
+                          border: 'none',
+                          borderRadius: 999,
+                          padding: '6px 10px',
+                          background: COLORS.deleteRed,
+                          color: '#fff',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        确认
+                      </button>
+                      <button
+                        onClick={() => setDeleteId(null)}
+                        style={{
+                          border: 'none',
+                          borderRadius: 999,
+                          padding: '6px 10px',
+                          background: COLORS.subtleBg,
+                          color: COLORS.textMedium,
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setDeleteId(item.id)}
+                      style={{
+                        border: 'none',
+                        borderRadius: 999,
+                        padding: '6px 10px',
+                        background: COLORS.subtleBg,
+                        color: COLORS.textMedium,
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      删除
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
-          );
-        })
+              </div>
+            );
+          })}
+        </div>
       )}
 
-      {/* Add wish modal */}
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="添加愿望">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Add section */}
+      {showAdd ? (
+        <div
+          style={{
+            marginTop: 16,
+            background: '#fff',
+            borderRadius: '1.4rem',
+            padding: '16px 18px',
+            border: `1.5px solid ${COLORS.subtleBorder}`,
+          }}
+        >
           <input
-            placeholder="愿望内容"
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            style={inputStyle}
+            type="text"
+            placeholder="输入愿望..."
+            value={addContent}
+            onChange={(e) => setAddContent(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '10px 0',
+              border: 'none',
+              borderBottom: `1px solid ${COLORS.subtleBorder}`,
+              fontSize: '0.95rem',
+              color: COLORS.textDark,
+              outline: 'none',
+              background: 'transparent',
+              marginBottom: 12,
+              fontFamily: 'inherit',
+            }}
           />
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setNewCategory(cat.id)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  border: newCategory === cat.id ? `2px solid ${cat.color}` : '1px solid #ddd',
-                  background: newCategory === cat.id ? `${cat.color}15` : '#fff',
-                  color: newCategory === cat.id ? cat.color : '#999',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  fontWeight: newCategory === cat.id ? 600 : 400,
-                }}
-              >
-                {cat.icon} {cat.label}
-              </button>
-            ))}
+
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: COLORS.textMedium,
+                marginBottom: 8,
+              }}
+            >
+              分类
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setAddCategory(cat.id)}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '7px 14px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: addCategory === cat.id ? cat.color : COLORS.subtleBg,
+                    color: addCategory === cat.id ? '#fff' : COLORS.textMedium,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {cat.icon} {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <button onClick={handleAdd} style={btnStyle}>
-            提交
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handleAdd}
+              style={{
+                flex: 1,
+                padding: 12,
+                borderRadius: 999,
+                border: 'none',
+                background: COLORS.primary,
+                color: '#fff',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+              }}
+            >
+              添加
+            </button>
+            <button
+              onClick={() => {
+                setShowAdd(false);
+                setAddContent('');
+              }}
+              style={{
+                flex: 1,
+                padding: 12,
+                borderRadius: 999,
+                border: 'none',
+                background: COLORS.subtleBg,
+                color: COLORS.textDark,
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <button
+            onClick={() => setShowAdd(true)}
+            style={{
+              padding: '12px 32px',
+              borderRadius: 999,
+              border: 'none',
+              background: COLORS.primary,
+              color: '#fff',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+            }}
+          >
+            + 添加愿望
           </button>
         </div>
-      </Modal>
-    </FadeIn>
+      )}
+    </div>
   );
 }
-
-const inputStyle = {
-  padding: '10px 14px',
-  borderRadius: 8,
-  border: '1px solid #ddd',
-  fontSize: 15,
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-const btnStyle = {
-  padding: '10px 0',
-  borderRadius: 8,
-  border: 'none',
-  background: '#4a90d9',
-  color: '#fff',
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: 'pointer',
-  width: '100%',
-};
