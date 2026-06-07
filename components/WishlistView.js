@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { COLORS, CATEGORIES } from '../lib/constants';
 import { uid as genUid } from '../lib/api';
+import Modal from './Modal';
 
 export default function WishlistView({ items, onUpdate, currentUser, onShowToast }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -9,10 +10,9 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
   const [filter, setFilter] = useState('all');
   const [deleteId, setDeleteId] = useState(null);
 
-  // Filter by current user AND category
-  const userItems = (items || []).filter((item) => !item.createdBy || item.createdBy === currentUser.id);
+  // Filter by category only (show all users' items)
   const filteredItems =
-    filter === 'all' ? userItems : userItems.filter((item) => item.category === filter);
+    filter === 'all' ? (items || []) : (items || []).filter((item) => item.category === filter);
 
   const handleToggle = (itemId) => {
     const newItems = items.map((item) =>
@@ -331,112 +331,104 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
         </div>
       )}
 
-      {/* Add form */}
-      {showAdd && (
-        <div
+      {/* Add Modal */}
+      <Modal visible={showAdd} onClose={() => { setShowAdd(false); setAddContent(''); }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 20px 0', textAlign: 'center' }}>
+          添加愿望
+        </h3>
+
+        <input
+          type="text"
+          placeholder="输入愿望..."
+          value={addContent}
+          onChange={(e) => setAddContent(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          autoFocus
           style={{
-            marginTop: 16,
-            background: '#fff',
-            borderRadius: '1.4rem',
-            padding: '16px 18px',
+            width: '100%',
+            padding: '12px 16px',
             border: `1.5px solid ${COLORS.subtleBorder}`,
+            borderRadius: 999,
+            fontSize: '0.95rem',
+            color: COLORS.textDark,
+            outline: 'none',
+            background: COLORS.subtleBg2,
+            marginBottom: 16,
+            fontFamily: 'inherit',
+            boxSizing: 'border-box',
           }}
-        >
-          <input
-            type="text"
-            placeholder="输入愿望..."
-            value={addContent}
-            onChange={(e) => setAddContent(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-            autoFocus
+        />
+
+        <div style={{ marginBottom: 20 }}>
+          <div
             style={{
-              width: '100%',
-              padding: '10px 0',
-              border: 'none',
-              borderBottom: `1px solid ${COLORS.subtleBorder}`,
-              fontSize: '0.95rem',
-              color: COLORS.textDark,
-              outline: 'none',
-              background: 'transparent',
-              marginBottom: 12,
-              fontFamily: 'inherit',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: COLORS.textMedium,
+              marginBottom: 10,
             }}
-          />
-
-          <div style={{ marginBottom: 12 }}>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                color: COLORS.textMedium,
-                marginBottom: 8,
-              }}
-            >
-              分类
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setAddCategory(cat.id)}
-                  style={{
-                    border: 'none',
-                    borderRadius: 999,
-                    padding: '7px 14px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    background: addCategory === cat.id ? cat.color : COLORS.subtleBg,
-                    color: addCategory === cat.id ? '#fff' : COLORS.textMedium,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {cat.icon} {cat.label}
-                </button>
-              ))}
-            </div>
+          >
+            分类
           </div>
-
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={handleAdd}
-              style={{
-                flex: 1,
-                padding: 12,
-                borderRadius: 999,
-                border: 'none',
-                background: COLORS.primary,
-                color: '#fff',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
-              }}
-            >
-              添加
-            </button>
-            <button
-              onClick={() => {
-                setShowAdd(false);
-                setAddContent('');
-              }}
-              style={{
-                flex: 1,
-                padding: 12,
-                borderRadius: 999,
-                border: 'none',
-                background: COLORS.subtleBg,
-                color: COLORS.textDark,
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              取消
-            </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setAddCategory(cat.id)}
+                style={{
+                  border: addCategory === cat.id ? `2px solid ${cat.color}` : `1.5px solid ${COLORS.subtleBorder}`,
+                  borderRadius: 999,
+                  padding: '8px 16px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: addCategory === cat.id ? `${cat.color}14` : '#fff',
+                  color: addCategory === cat.id ? cat.color : COLORS.textMedium,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {cat.icon} {cat.label}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => { setShowAdd(false); setAddContent(''); }}
+            style={{
+              flex: 1,
+              padding: 13,
+              borderRadius: 999,
+              border: `1.5px solid ${COLORS.subtleBorder}`,
+              background: '#fff',
+              color: COLORS.textMedium,
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={handleAdd}
+            style={{
+              flex: 1,
+              padding: 13,
+              borderRadius: 999,
+              border: 'none',
+              background: COLORS.primary,
+              color: '#fff',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+            }}
+          >
+            添加
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

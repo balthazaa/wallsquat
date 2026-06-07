@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { COLORS } from '../lib/constants';
+import Modal from './Modal';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 const TIME_SLOTS = [
-  { id: 'am', label: '上午打卡', subLabel: '6:00 — 12:00', icon: '☀️' },
-  { id: 'pm', label: '下午打卡', subLabel: '12:00 — 21:00', icon: '🌙' },
+  { id: 'am', label: '上午打卡', subLabel: '6:00 — 14:00', icon: '☀️' },
+  { id: 'pm', label: '下午打卡', subLabel: '12:00 — 22:00', icon: '🌙' },
 ];
 
 // D1 format: { "YYYY-MM-DD": { "userId": { "am"|"pm": { done, time } } } }
@@ -13,6 +14,8 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
   const today = new Date().toISOString().slice(0, 10);
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showMakeup, setShowMakeup] = useState(false);
 
   const navMonth = (delta) => {
     setViewMonth((m) => {
@@ -101,6 +104,40 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
     }
     onUpdate(newCheckins);
     onShowToast('已取消');
+  };
+
+  // Handle makeup checkin for a past date
+  const handleMakeupCheckin = (date, slotId) => {
+    const newCheckins = JSON.parse(JSON.stringify(checkins || {}));
+    if (!newCheckins[date]) newCheckins[date] = {};
+    if (!newCheckins[date][currentUser.id]) newCheckins[date][currentUser.id] = {};
+    newCheckins[date][currentUser.id][slotId] = { done: true, time: Date.now() };
+    onUpdate(newCheckins);
+    onShowToast(`${date} ${TIME_SLOTS.find(s => s.id === slotId)?.label} 已补卡`);
+  };
+
+  // Handle cancel makeup
+  const handleMakeupCancel = (date, slotId) => {
+    const newCheckins = JSON.parse(JSON.stringify(checkins || {}));
+    const dayData = newCheckins[date];
+    if (dayData?.[currentUser.id]) {
+      delete dayData[currentUser.id][slotId];
+      if (Object.keys(dayData[currentUser.id]).length === 0) {
+        delete dayData[currentUser.id];
+      }
+      if (Object.keys(dayData).length === 0) {
+        delete newCheckins[date];
+      }
+    }
+    onUpdate(newCheckins);
+    onShowToast('已取消补卡');
+  };
+
+  // Format date for display
+  const fmtDateDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${y}年${parseInt(m)}月${parseInt(d)}日`;
   };
 
   return (
@@ -196,25 +233,39 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, textAlign: 'center' }}>
           {calendarDays.map(({ day, date, isOther }, i) => {
+            if (!date) {
+              return <div key={i} />;
+            }
             const isToday = date === today;
+            const isFuture = date > today;
             const status = getDayStatus(date);
             let bg = COLORS.subtleBg2;
             if (status === 'full') bg = COLORS.successLightBg;
             else if (status === 'half') bg = COLORS.warning;
 
+            const canClick = !isOther && !isFuture;
+
             return (
               <div
                 key={i}
+                onClick={() => {
+                  if (canClick) {
+                    setSelectedDate(date);
+                    setShowMakeup(true);
+                  }
+                }}
                 style={{
                   padding: '8px 0',
                   borderRadius: '1rem',
-                  cursor: 'default',
+                  cursor: canClick ? 'pointer' : 'default',
                   border: isToday ? '2px solid hsl(346, 84%, 61%)' : '2px solid transparent',
-                  background: !isOther ? bg : 'transparent',
-                  color: isOther ? 'transparent' : COLORS.textDark,
+                  background: isFuture || isOther ? COLORS.subtleBg2 : bg,
+                  color: isOther ? 'transparent' : isFuture ? COLORS.textDisabled : COLORS.textDark,
                   fontWeight: 400,
                   fontSize: 15,
                   textAlign: 'center',
+                  opacity: isFuture ? 0.45 : 1,
+                  transition: canClick ? 'all 0.15s' : 'none',
                 }}
               >
                 {day}
@@ -233,6 +284,12 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
             <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>部分</span>
           </div>
         </div>
+
+        <div style={{ textAlign: 'center', marginTop: 10 }}>
+          <span style={{ fontSize: '0.65rem', color: COLORS.textLight }}>
+            点击已过去的日期可以补卡
+          </span>
+        </div>
       </div>
 
       {/* Stats */}
@@ -240,6 +297,81 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
         <span>本月打卡：{stats.days} 天</span>
         <span>总次数：{stats.count} 次</span>
       </div>
+
+      {/* Makeup Modal */}
+      <Modal visible={showMakeup} onClose={() => { setShowMakeup(false); setSelectedDate(null); }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 6px 0', textAlign: 'center' }}>
+          补卡
+        </h3>
+        <p style={{ fontSize: '0.82rem', color: COLORS.textMuted, textAlign: 'center', marginBottom: 20 }}>
+          {fmtDateDisplay(selectedDate)}
+        </p>
+
+        {TIME_SLOTS.map((slot) => {
+          const info = selectedDate ? getSlotInfo(selectedDate, slot.id) : null;
+          return (
+            <div
+              key={slot.id}
+              style={{
+                borderRadius: '1.2rem',
+                border: info
+                  ? '1.5px solid hsl(142, 71%, 70%)'
+                  : `1.5px solid ${COLORS.subtleBorder}`,
+                background: info ? 'hsl(142, 76%, 96%)' : COLORS.subtleBg2,
+                padding: '12px 16px',
+                marginBottom: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <span style={{ fontSize: '1.2rem' }}>{slot.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: COLORS.textDark }}>
+                  {slot.label}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: COLORS.textMuted, marginTop: 2 }}>
+                  {info ? '已打卡' : slot.subLabel}
+                </div>
+              </div>
+              {info ? (
+                <button
+                  onClick={() => handleMakeupCancel(selectedDate, slot.id)}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '7px 14px',
+                    background: 'hsl(142, 71%, 90%)',
+                    color: 'hsl(142, 71%, 35%)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  取消
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleMakeupCheckin(selectedDate, slot.id)}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '8px 16px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: COLORS.primary,
+                    color: '#fff',
+                    boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+                  }}
+                >
+                  补卡
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </Modal>
     </div>
   );
 }

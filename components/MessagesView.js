@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { COLORS } from '../lib/constants';
 import { uid as genUid } from '../lib/api';
+import Modal from './Modal';
 
 function senderAvatar(sender) {
   if (sender === 'Diane') return { bg: 'hsl(346, 84%, 61%)', emoji: 'D', color: '#fff', border: 'hsl(346, 84%, 61%)' };
@@ -61,7 +62,6 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
     onShowToast('已删除');
   };
 
-  const isDiane = currentUser.id === 'Diane';
   const grouped = groupByDate(messages || []);
 
   return (
@@ -96,74 +96,68 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
         </button>
       </div>
 
-      {/* Inline input form */}
-      {showInput && (
-        <div
+      {/* Send Modal */}
+      <Modal visible={showInput} onClose={() => { setShowInput(false); setText(''); }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 20px 0', textAlign: 'center' }}>
+          发消息
+        </h3>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="说点什么..."
+          autoFocus
+          rows={4}
           style={{
-            marginBottom: 16,
-            background: '#fff',
-            borderRadius: '1.4rem',
+            width: '100%',
             padding: '14px 16px',
             border: `1.5px solid ${COLORS.subtleBorder}`,
-            display: 'flex',
-            gap: 8,
+            borderRadius: '1.2rem',
+            fontSize: '0.95rem',
+            color: COLORS.textDark,
+            outline: 'none',
+            background: COLORS.subtleBg2,
+            marginBottom: 20,
+            fontFamily: 'inherit',
+            resize: 'vertical',
+            boxSizing: 'border-box',
           }}
-        >
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="说点什么..."
-            autoFocus
+        />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => { setShowInput(false); setText(''); }}
             style={{
               flex: 1,
-              padding: '10px 16px',
+              padding: 13,
               borderRadius: 999,
-              border: `1px solid ${COLORS.subtleBorder}`,
-              fontSize: '0.88rem',
-              color: COLORS.textDark,
-              outline: 'none',
+              border: `1.5px solid ${COLORS.subtleBorder}`,
               background: '#fff',
-              fontFamily: 'inherit',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 999,
-              border: 'none',
-              background: isDiane ? COLORS.primary : 'hsl(218, 60%, 65%)',
-              color: '#fff',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: `0 4px 14px ${isDiane ? COLORS.primaryGlow : 'hsla(218, 60%, 65%, 0.35)'}`,
-            }}
-          >
-            发送
-          </button>
-          <button
-            onClick={() => {
-              setShowInput(false);
-              setText('');
-            }}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 999,
-              border: 'none',
-              background: COLORS.subtleBg,
               color: COLORS.textMedium,
-              fontSize: '0.82rem',
+              fontSize: '0.9rem',
               fontWeight: 600,
               cursor: 'pointer',
             }}
           >
             取消
           </button>
+          <button
+            onClick={handleSend}
+            style={{
+              flex: 1,
+              padding: 13,
+              borderRadius: 999,
+              border: 'none',
+              background: COLORS.primary,
+              color: '#fff',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+            }}
+          >
+            发送
+          </button>
         </div>
-      )}
+      </Modal>
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>

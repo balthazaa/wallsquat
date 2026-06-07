@@ -14,7 +14,7 @@ const VIEW_TITLES = {
 };
 
 const VIEW_SUBTITLES = {
-  checkin: '每日两次，坚持打卡💪',
+  checkin: '每日三次，坚持打卡💪',
   wishlist: '记录我们的小愿望✨',
   messages: '想说点什么💬',
 };
@@ -105,7 +105,7 @@ export default function Home() {
   return (
     <div
       style={{
-        padding: '40px 16px 110px',
+        padding: '40px 16px 100px',
         minHeight: '100vh',
         maxWidth: 560,
         margin: '0 auto',
@@ -129,48 +129,50 @@ export default function Home() {
         </p>
       </div>
 
-      {/* User switch */}
-      <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'center' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            gap: 0,
-            padding: 4,
-            background: '#fff',
-            borderRadius: 999,
-            boxShadow:
-              '0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
-            border: `1px solid ${COLORS.subtleBorder}`,
-          }}
-        >
-          {USERS.map((user) => (
-            <button
-              key={user.id}
-              onClick={() =>
-                setCurrentUser(
-                  user.id === USERS[0].id ? USERS[0] : USERS[1]
-                )
-              }
-              style={{
-                width: 120,
-                padding: '10px 8px',
-                border: 'none',
-                borderRadius: 999,
-                cursor: 'pointer',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                transition: 'all 0.25s ease',
-                background:
-                  currentUser.id === user.id ? COLORS.primary : 'transparent',
-                color:
-                  currentUser.id === user.id ? '#fff' : COLORS.textMuted,
-              }}
-            >
-              {user.label}
-            </button>
-          ))}
+      {/* User switch — only on checkin page */}
+      {currentView === 'checkin' && (
+        <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'center' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              gap: 0,
+              padding: 4,
+              background: '#fff',
+              borderRadius: 999,
+              boxShadow:
+                '0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+              border: `1px solid ${COLORS.subtleBorder}`,
+            }}
+          >
+            {USERS.map((user) => (
+              <button
+                key={user.id}
+                onClick={() =>
+                  setCurrentUser(
+                    user.id === USERS[0].id ? USERS[0] : USERS[1]
+                  )
+                }
+                style={{
+                  width: 120,
+                  padding: '10px 8px',
+                  border: 'none',
+                  borderRadius: 999,
+                  cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  transition: 'all 0.25s ease',
+                  background:
+                    currentUser.id === user.id ? COLORS.primary : 'transparent',
+                  color:
+                    currentUser.id === user.id ? '#fff' : COLORS.textMuted,
+                }}
+              >
+                {user.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* View content */}
       <FadeIn key={currentView}>
@@ -221,50 +223,56 @@ export default function Home() {
             display: 'flex',
           }}
         >
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setCurrentView(tab.id)}
-              style={{
-                flex: 1,
-                padding: '30px 0',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 4,
-                transition: 'all 0.2s',
-              }}
-            >
-              <span
+          {TABS.map((tab) => {
+            const tabIcon = tab.label === '打卡' ? '📋' : tab.label === 'Wishlist' ? '✨' : '💬';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setCurrentView(tab.id)}
                 style={{
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  color:
-                    currentView === tab.id ? COLORS.primary : COLORS.textMuted,
-                  transition: 'color 0.2s',
+                  flex: 1,
+                  padding: '15px 0',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  transition: 'all 0.2s',
+                  height: 90,
+                  boxSizing: 'border-box',
                 }}
               >
-                {tab.label === '打卡' && '\uD83D\uDCCB '}
-                {tab.label === 'Wishlist' && '\u2728 '}
-                {tab.label === '留言板' && '\uD83D\uDCAC '}
-                {tab.label}
-              </span>
-              <div
-                style={{
-                  width: 16,
-                  height: 2,
-                  borderRadius: 999,
-                  background:
-                    currentView === tab.id ? COLORS.primary : 'transparent',
-                  marginTop: 1,
-                  transition: 'all 0.2s',
-                }}
-              />
-            </button>
-          ))}
+                <span style={{ fontSize: '1.2rem', lineHeight: 1.2 }}>
+                  {tabIcon}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    color:
+                      currentView === tab.id ? COLORS.primary : COLORS.textMuted,
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  {tab.label}
+                </span>
+                <div
+                  style={{
+                    width: 16,
+                    height: 2,
+                    borderRadius: 999,
+                    background:
+                      currentView === tab.id ? COLORS.primary : 'transparent',
+                    marginTop: 2,
+                    transition: 'all 0.2s',
+                  }}
+                />
+              </button>
+            );
+          })}
         </div>
       </nav>
 
