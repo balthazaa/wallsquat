@@ -4,8 +4,8 @@ import { uid as genUid } from '../lib/api';
 import Modal from './Modal';
 
 function senderAvatar(sender) {
-  if (sender === 'Diane') return { bg: COLORS.primary, emoji: 'D', color: '#fff', border: COLORS.primary };
-  return { bg: COLORS.lanrenPrimary, emoji: '懒', color: '#fff', border: COLORS.lanrenPrimary };
+  if (sender === 'Diane') return { bg: COLORS.primary, emoji: 'D', color: '#fff', border: COLORS.primary, bgLight: 'hsla(346, 84%, 61%, 0.15)', textColor: COLORS.primary };
+  return { bg: COLORS.lanrenPrimary, emoji: '懒', color: '#fff', border: COLORS.lanrenPrimary, bgLight: 'hsla(218, 84%, 61%, 0.15)', textColor: COLORS.lanrenPrimary };
 }
 
 function formatTime(iso) {
@@ -335,7 +335,7 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
               }
 
               const msg = item.data;
-              const isMe = msg.sender === currentUser.id;
+              const isDiane = msg.sender === 'Diane';
               const avatar = senderAvatar(msg.sender);
               const time = msg.createdAt ? formatTime(msg.createdAt) : '';
 
@@ -344,7 +344,7 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                   key={msg.id}
                   style={{
                     display: 'flex',
-                    flexDirection: isMe ? 'row-reverse' : 'row',
+                    flexDirection: isDiane ? 'row-reverse' : 'row',
                     gap: 8,
                     alignItems: 'flex-end',
                   }}
@@ -355,13 +355,13 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                       width: 32,
                       height: 32,
                       borderRadius: '50%',
-                      background: avatar.bg,
+                      background: avatar.bgLight,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '0.65rem',
                       fontWeight: 700,
-                      color: avatar.color,
+                      color: avatar.textColor,
                       flexShrink: 0,
                     }}
                   >
@@ -373,9 +373,9 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                     <div
                       style={{
                         padding: '10px 14px',
-                        borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                        background: isMe ? COLORS.primary : '#fff',
-                        color: isMe ? '#fff' : COLORS.textDark,
+                        borderRadius: isDiane ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                        background: isDiane ? COLORS.primary : '#fff',
+                        color: isDiane ? '#fff' : COLORS.textDark,
                         fontSize: '0.88rem',
                         lineHeight: 1.5,
                         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
@@ -390,9 +390,9 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                         alignItems: 'center',
                         gap: 6,
                         marginTop: 4,
-                        paddingLeft: isMe ? 0 : 4,
-                        paddingRight: isMe ? 4 : 0,
-                        justifyContent: isMe ? 'flex-end' : 'flex-start',
+                        paddingLeft: isDiane ? 0 : 4,
+                        paddingRight: isDiane ? 4 : 0,
+                        justifyContent: isDiane ? 'flex-end' : 'flex-start',
                       }}
                     >
                       <span style={{ fontSize: '0.65rem', color: COLORS.textLight }}>

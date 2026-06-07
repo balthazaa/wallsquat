@@ -28,20 +28,27 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
     });
   };
 
+  // Legacy name mapping: 懒人 was previously 淡人
+  const LEGACY_KEYS = { '懒人': '淡人' };
+
+  const getUserFromDay = (dayData, userId) => {
+    if (!dayData) return null;
+    if (dayData[userId]) return dayData[userId];
+    const legacy = LEGACY_KEYS[userId];
+    if (legacy && dayData[legacy]) return dayData[legacy];
+    return null;
+  };
+
   // Get slot info for a specific date + slot
   const getSlotInfo = (date, slotId) => {
-    const dayData = checkins?.[date];
-    if (!dayData) return null;
-    const userData = dayData[currentUser.id];
+    const userData = getUserFromDay(checkins?.[date], currentUser.id);
     if (!userData) return null;
     return userData[slotId] || null;
   };
 
   // Day status for calendar coloring
   const getDayStatus = (date) => {
-    const dayData = checkins?.[date];
-    if (!dayData) return 'none';
-    const userData = dayData[currentUser.id];
+    const userData = getUserFromDay(checkins?.[date], currentUser.id);
     if (!userData) return 'none';
     const amDone = !!userData.am?.done;
     const pmDone = !!userData.pm?.done;
@@ -70,7 +77,7 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
     if (!checkins) return { days, count };
     for (const [date, dayData] of Object.entries(checkins)) {
       if (date.slice(0, 7) !== monthKey) continue;
-      const userData = dayData?.[currentUser.id];
+      const userData = getUserFromDay(dayData, currentUser.id);
       if (!userData) continue;
       let hasAny = false;
       if (userData.am?.done) { hasAny = true; count++; }
@@ -308,11 +315,11 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
                   cursor: canClick ? 'pointer' : 'default',
                   border: isToday ? '2px solid hsl(346, 84%, 61%)' : '2px solid transparent',
                   background: isFuture || isOther ? COLORS.subtleBg2 : bg,
-                  color: isOther ? 'transparent' : isFuture ? COLORS.textDisabled : COLORS.textDark,
+                  color: isOther ? 'transparent' : isFuture ? COLORS.textMuted : COLORS.textDark,
                   fontWeight: 400,
                   fontSize: 15,
                   textAlign: 'center',
-                  opacity: isFuture ? 0.45 : 1,
+                  opacity: isFuture ? 0.8 : 1,
                   transition: canClick ? 'all 0.15s' : 'none',
                 }}
               >

@@ -331,7 +331,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                           border: 'none',
                           borderRadius: 999,
                           padding: '6px 10px',
-                          background: COLORS.deleteRed,
+                          background: COLORS.primary,
                           color: '#fff',
                           fontSize: '0.75rem',
                           fontWeight: 600,
