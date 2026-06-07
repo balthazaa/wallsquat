@@ -9,12 +9,10 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
   const [filter, setFilter] = useState('all');
   const [deleteId, setDeleteId] = useState(null);
 
-  // Filter items by current user and category
-  const userItems = (items || []).filter((item) => !item.userId || item.userId === currentUser.id);
+  // Filter by current user AND category
+  const userItems = (items || []).filter((item) => !item.createdBy || item.createdBy === currentUser.id);
   const filteredItems =
-    filter === 'all'
-      ? userItems
-      : userItems.filter((item) => item.category === filter);
+    filter === 'all' ? userItems : userItems.filter((item) => item.category === filter);
 
   const handleToggle = (itemId) => {
     const newItems = items.map((item) =>
@@ -27,11 +25,13 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
     if (!addContent.trim()) return;
     const newItem = {
       id: genUid(),
-      content: addContent.trim(),
       category: addCategory,
-      userId: currentUser.id,
-      createdAt: new Date().toISOString(),
+      title: addContent.trim(),
+      notes: '',
+      createdBy: currentUser.id,
+      createdAt: Date.now(),
       done: false,
+      completedAt: null,
     };
     onUpdate([...(items || []), newItem]);
     setAddContent('');
@@ -49,7 +49,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
     return CATEGORIES.find((c) => c.id === catId) || CATEGORIES[3];
   };
 
-  function getUserBadge(userId) {
+  const getUserBadge = (userId) => {
     if (userId === 'Diane') {
       return { bg: COLORS.dianeBadgeBg, color: COLORS.dianeBadgeColor, text: 'Diane' };
     }
@@ -57,7 +57,13 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
       return { bg: COLORS.lanrenBadgeBg, color: COLORS.lanrenBadgeColor, text: '懒人' };
     }
     return null;
-  }
+  };
+
+  const fmtDate = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+  };
 
   return (
     <div style={{ position: 'relative' }}>
@@ -151,6 +157,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filteredItems.map((item) => {
             const cat = getCategoryInfo(item.category);
+            const badge = getUserBadge(item.createdBy);
 
             return (
               <div
@@ -158,7 +165,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                 style={{
                   borderRadius: '1.4rem',
                   border: item.done
-                    ? `1.5px solid hsl(142, 71%, 70%)`
+                    ? '1.5px solid hsl(142, 71%, 70%)'
                     : `1.5px solid ${COLORS.subtleBorder}`,
                   background: item.done ? COLORS.successBg : '#fff',
                   padding: '16px 18px',
@@ -209,7 +216,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                         textDecoration: item.done ? 'line-through' : 'none',
                       }}
                     >
-                      {item.content}
+                      {item.title}
                     </div>
 
                     <div
@@ -233,18 +240,24 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                         {cat.icon} {cat.label}
                       </span>
 
-                      {getUserBadge(item.userId) && (
+                      {badge && (
                         <span
                           style={{
                             fontSize: '0.68rem',
                             fontWeight: 600,
-                            background: getUserBadge(item.userId).bg,
-                            color: getUserBadge(item.userId).color,
+                            background: badge.bg,
+                            color: badge.color,
                             padding: '2px 8px',
                             borderRadius: 999,
                           }}
                         >
-                          {getUserBadge(item.userId).text}
+                          {badge.text}
+                        </span>
+                      )}
+
+                      {item.createdAt && (
+                        <span style={{ fontSize: '0.65rem', color: COLORS.textMuted }}>
+                          {fmtDate(item.createdAt)}
                         </span>
                       )}
 

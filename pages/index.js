@@ -227,20 +227,20 @@ export default function Home() {
               onClick={() => setCurrentView(tab.id)}
               style={{
                 flex: 1,
-                padding: '8px 0 6px',
+                padding: '30px 0',
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 2,
+                gap: 4,
                 transition: 'all 0.2s',
               }}
             >
               <span
                 style={{
-                  fontSize: '0.65rem',
+                  fontSize: '0.7rem',
                   fontWeight: 600,
                   color:
                     currentView === tab.id ? COLORS.primary : COLORS.textMuted,
