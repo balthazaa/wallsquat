@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { COLORS } from '../lib/constants';
 import Modal from './Modal';
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
 const TIME_SLOTS = [
   { id: 'am', label: '上午打卡', subLabel: '6:00 — 14:00', icon: '☀️' },
@@ -52,7 +52,8 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
 
   // Calendar grid
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  // Monday-first: 0=Mon ... 6=Sun
+  const firstDay = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
   const calendarDays = [];
   for (let i = 0; i < firstDay; i++) calendarDays.push({ day: '', date: null, isOther: true });
   for (let d = 1; d <= daysInMonth; d++) {
@@ -222,23 +223,25 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
         })}
       </div>
 
-      {/* Calendar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
+      {/* Calendar Month Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 420, margin: '0 auto 16px' }}>
         <button
           onClick={() => navMonth(-1)}
           style={{
             background: '#fff',
             border: 'none',
-            borderRadius: 999,
-            width: 36,
-            height: 36,
+            borderRadius: 14,
+            width: 40,
+            height: 28,
             fontSize: 18,
             cursor: 'pointer',
-            color: COLORS.textMedium,
+            color: COLORS.textLight,
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            padding: 0,
+            lineHeight: 1,
           }}
         >
           ‹
@@ -251,16 +254,18 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
           style={{
             background: '#fff',
             border: 'none',
-            borderRadius: 999,
-            width: 36,
-            height: 36,
+            borderRadius: 14,
+            width: 40,
+            height: 28,
             fontSize: 18,
             cursor: 'pointer',
-            color: COLORS.textMedium,
+            color: COLORS.textLight,
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            padding: 0,
+            lineHeight: 1,
           }}
         >
           ›
@@ -421,6 +426,26 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
             </div>
           );
         })}
+
+        <button
+          onClick={() => { setShowMakeup(false); setSelectedDate(null); }}
+          style={{
+            display: 'block',
+            width: '100%',
+            marginTop: 12,
+            padding: '10px 0',
+            border: `1.5px solid ${COLORS.subtleBorder}`,
+            borderRadius: '1rem',
+            background: '#fff',
+            color: COLORS.textMedium,
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            textAlign: 'center',
+          }}
+        >
+          关闭
+        </button>
       </Modal>
     </div>
   );

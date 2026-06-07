@@ -4,8 +4,8 @@ import { uid as genUid } from '../lib/api';
 import Modal from './Modal';
 
 function senderAvatar(sender) {
-  if (sender === 'Diane') return { bg: 'hsl(346, 84%, 61%)', emoji: 'D', color: '#fff', border: 'hsl(346, 84%, 61%)' };
-  return { bg: 'hsl(218, 60%, 65%)', emoji: '懒', color: '#fff', border: 'hsl(218, 60%, 65%)' };
+  if (sender === 'Diane') return { bg: COLORS.primary, emoji: 'D', color: '#fff', border: COLORS.primary };
+  return { bg: COLORS.lanrenPrimary, emoji: '懒', color: '#fff', border: COLORS.lanrenPrimary };
 }
 
 function formatTime(iso) {
@@ -35,21 +35,20 @@ function groupByDate(msgs) {
 export default function MessagesView({ messages, onUpdate, currentUser, onShowToast }) {
   const [text, setText] = useState('');
   const [showInput, setShowInput] = useState(false);
-  const [sendAs, setSendAs] = useState(null);
+  const [sendAs, setSendAs] = useState(USERS[1].id); // default 懒人
   const [deleteId, setDeleteId] = useState(null);
 
   const handleSend = () => {
     if (!text.trim()) return;
-    const sender = sendAs || currentUser.id;
     const newMsg = {
       id: genUid(),
       content: text.trim(),
-      sender,
+      sender: sendAs,
       createdAt: new Date().toISOString(),
     };
-    onUpdate([...(messages || []), newMsg]);
+    onUpdate([newMsg, ...(messages || [])]);
     setText('');
-    setSendAs(null);
+    setSendAs(USERS[1].id); // reset to 懒人
     setShowInput(false);
     onShowToast('留言已发送');
   };
@@ -95,7 +94,7 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
       </div>
 
       {/* Send Modal */}
-      <Modal visible={showInput} onClose={() => { setShowInput(false); setText(''); setSendAs(null); }}>
+      <Modal visible={showInput} onClose={() => { setShowInput(false); setText(''); setSendAs(USERS[1].id); }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 20px 0', textAlign: 'center' }}>
           发消息
         </h3>
@@ -112,7 +111,7 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
             }}
           >
             {USERS.map((user) => {
-              const active = (sendAs || currentUser.id) === user.id;
+              const active = sendAs === user.id;
               const avatar = senderAvatar(user.id);
               return (
                 <button
