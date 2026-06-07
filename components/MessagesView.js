@@ -380,6 +380,7 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                         lineHeight: 1.5,
                         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                         wordBreak: 'break-word',
+                        width: 'fit-content',
                       }}
                     >
                       {msg.content}
