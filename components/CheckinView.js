@@ -177,7 +177,7 @@ export default function CheckinView({ checkins, onUpdate, currentUser, onShowToa
             >
               <span style={{ fontSize: '1.3rem' }}>{slot.icon}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textDark }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: info ? COLORS.success : COLORS.textDark }}>
                   {slot.label}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: COLORS.textMuted, marginTop: 2 }}>

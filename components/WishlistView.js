@@ -7,7 +7,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
   // Add modal state
   const [showAdd, setShowAdd] = useState(false);
   const [addSender, setAddSender] = useState(USERS[1].id); // default 懒人
-  const [addCategory, setAddCategory] = useState('other');
+  const [addCategory, setAddCategory] = useState('travel');
   const [addTitle, setAddTitle] = useState('');
   const [addNotes, setAddNotes] = useState('');
 
@@ -47,10 +47,10 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
       done: false,
       completedAt: null,
     };
-    onUpdate([...(items || []), newItem]);
+    onUpdate([newItem, ...(items || [])]);
     setAddTitle('');
     setAddNotes('');
-    setAddCategory('other');
+    setAddCategory('travel');
     setAddSender(USERS[1].id);
     setShowAdd(false);
     onShowToast('愿望已添加');
@@ -307,24 +307,24 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                           {badge.text}
                         </span>
                       )}
-
-                      {item.createdAt && (
-                        <span style={{ fontSize: '0.65rem', color: COLORS.textMuted }}>
-                          {fmtDate(item.createdAt)}
-                        </span>
-                      )}
-
-                      {item.done && (
-                        <span style={{ fontSize: '0.65rem', color: COLORS.success, fontWeight: 600 }}>
-                          ✓ {item.completedAt ? fmtDate(item.completedAt) : ''}已完成
-                        </span>
-                      )}
                     </div>
+
+                    {item.createdAt && (
+                      <div style={{ fontSize: '0.65rem', color: COLORS.textMuted, marginTop: 3 }}>
+                        {fmtDate(item.createdAt)}
+                      </div>
+                    )}
+
+                    {item.done && (
+                      <div style={{ fontSize: '0.65rem', color: COLORS.success, fontWeight: 600, marginTop: 2 }}>
+                        ✓ {item.completedAt ? fmtDate(item.completedAt) : ''}已完成
+                      </div>
+                    )}
                   </div>
 
                   {/* Edit + Delete */}
                   {deleteId === item.id ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', gap: 4 }}>
                       <button
                         onClick={() => handleDelete(item.id)}
                         style={{
@@ -356,7 +356,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', gap: 4, alignItems: 'center' }}>
                       <button
                         onClick={() => openEdit(item)}
                         style={{
@@ -464,13 +464,13 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
                 key={cat.id}
                 onClick={() => setAddCategory(cat.id)}
                 style={{
-                  border: addCategory === cat.id ? `2px solid ${cat.color}` : `1.5px solid ${COLORS.subtleBorder}`,
+                  border: 'none',
                   borderRadius: 999,
                   padding: '6px 14px',
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: addCategory === cat.id ? `${cat.color}14` : '#fff',
+                  background: addCategory === cat.id ? `${cat.color}18` : COLORS.subtleBg2,
                   color: addCategory === cat.id ? cat.color : COLORS.textMedium,
                   transition: 'all 0.15s',
                 }}
@@ -514,7 +514,7 @@ export default function WishlistView({ items, onUpdate, currentUser, onShowToast
             备注 <span style={{ fontWeight: 400, color: COLORS.textLight }}>(选填)</span>
           </div>
           <textarea
-            placeholder="添加备注..."
+            placeholder="可以写一些细节，比如具体时间地点、预算、发起这个心愿的原因……"
             value={addNotes}
             onChange={(e) => setAddNotes(e.target.value)}
             rows={2}

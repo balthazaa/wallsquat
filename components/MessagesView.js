@@ -37,6 +37,8 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
   const [showInput, setShowInput] = useState(false);
   const [sendAs, setSendAs] = useState(USERS[1].id); // default 懒人
   const [deleteId, setDeleteId] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [editContent, setEditContent] = useState('');
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -57,6 +59,21 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
     onUpdate(messages.filter((m) => m.id !== msgId));
     setDeleteId(null);
     onShowToast('已删除');
+  };
+
+  const openEdit = (msg) => {
+    setEditId(msg.id);
+    setEditContent(msg.content);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editContent.trim()) return;
+    onUpdate(messages.map((m) =>
+      m.id === editId ? { ...m, content: editContent.trim() } : m
+    ));
+    setEditId(null);
+    setEditContent('');
+    onShowToast('留言已更新');
   };
 
   const grouped = groupByDate(messages || []);
@@ -215,6 +232,68 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
         </div>
       </Modal>
 
+      {/* Edit Modal */}
+      <Modal visible={!!editId} onClose={() => { setEditId(null); setEditContent(''); }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLORS.textDark, margin: '0 0 20px 0', textAlign: 'center' }}>
+          编辑留言
+        </h3>
+        <textarea
+          value={editContent}
+          onChange={(e) => setEditContent(e.target.value)}
+          autoFocus
+          rows={4}
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            border: `1.5px solid ${COLORS.subtleBorder}`,
+            borderRadius: '1.2rem',
+            fontSize: '0.95rem',
+            color: COLORS.textDark,
+            outline: 'none',
+            background: COLORS.subtleBg2,
+            marginBottom: 20,
+            fontFamily: 'inherit',
+            resize: 'vertical',
+            boxSizing: 'border-box',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => { setEditId(null); setEditContent(''); }}
+            style={{
+              flex: 1,
+              padding: 13,
+              borderRadius: 999,
+              border: `1.5px solid ${COLORS.subtleBorder}`,
+              background: '#fff',
+              color: COLORS.textMedium,
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={handleSaveEdit}
+            style={{
+              flex: 1,
+              padding: 13,
+              borderRadius: 999,
+              border: 'none',
+              background: COLORS.primary,
+              color: '#fff',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: `0 4px 14px ${COLORS.primaryGlow}`,
+            }}
+          >
+            保存
+          </button>
+        </div>
+      </Modal>
+
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
         {(!messages || messages.length === 0) ? (
@@ -352,20 +431,36 @@ export default function MessagesView({ messages, onUpdate, currentUser, onShowTo
                           </button>
                         </>
                       ) : (
-                        <button
-                          onClick={() => setDeleteId(msg.id)}
-                          style={{
-                            border: 'none',
-                            background: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.65rem',
-                            color: COLORS.textMuted,
-                            padding: '2px 4px',
-                            borderRadius: 4,
-                          }}
-                        >
-                          删除
-                        </button>
+                        <>
+                          <button
+                            onClick={() => openEdit(msg)}
+                            style={{
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.65rem',
+                              color: COLORS.textMuted,
+                              padding: '2px 4px',
+                              borderRadius: 4,
+                            }}
+                          >
+                            编辑
+                          </button>
+                          <button
+                            onClick={() => setDeleteId(msg.id)}
+                            style={{
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.65rem',
+                              color: COLORS.textMuted,
+                              padding: '2px 4px',
+                              borderRadius: 4,
+                            }}
+                          >
+                            删除
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
